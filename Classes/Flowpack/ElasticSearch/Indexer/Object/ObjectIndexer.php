@@ -16,7 +16,6 @@ use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document;
 use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Utility\Arrays;
 
 /**
  * This serves functionality for indexing objects
@@ -111,16 +110,11 @@ class ObjectIndexer {
 		foreach ($this->indexInformer->getClassProperties($className) AS $propertyName) {
 			$value = \TYPO3\Flow\Reflection\ObjectAccess::getProperty($object, $propertyName);
 			if (($transformAnnotation = $this->reflectionService->getPropertyAnnotation($className, $propertyName, 'Flowpack\ElasticSearch\Annotations\Transform')) !== NULL) {
-				$mappingType = $this->transformerFactory->create($transformAnnotation->type)->getTargetMappingType();
 				$value = $this->transformerFactory->create($transformAnnotation->type)->transformByAnnotation($value, $transformAnnotation);
 			}
-
-			if (isset($mappingType) && $mappingType === 'array') {
-				$data = Arrays::arrayMergeRecursiveOverrule($data, $value);
-			} else {
-				$data[$propertyName] = $value;
-			}
+			$data[$propertyName] = $value;
 		}
+
 		return $data;
 	}
 
