@@ -12,6 +12,7 @@ namespace Flowpack\ElasticSearch\Domain\Model;
  *                                                                        */
 
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Utility\Arrays;
 
 /**
  * A Document which itself holds the data
@@ -50,6 +51,19 @@ class Document {
 	 * @var boolean
 	 */
 	protected $dirty = TRUE;
+
+	/**
+	 * @var array
+	 */
+	protected $settings;
+
+	/**
+	 * @param array $settings
+	 * @return void
+	 */
+	public function injectSettings(array $settings) {
+		$this->settings = $settings;
+	}
 
 	/**
 	 * @param \Flowpack\ElasticSearch\Domain\Model\AbstractType $type
@@ -99,6 +113,17 @@ class Document {
 		} else {
 			$method = 'POST';
 			$path = '';
+		}
+		$mapping = Arrays::getValueByPath($this->settings, 'mapping.' . $this->type->getIndex()->getName() . '.' . $this->type->getName());
+		$additionalPath = array();
+		if (isset($mapping['_parent'])) {
+			$additionalPath[] = 'parent=' . $this->data[$mapping['_parent']['type']];
+		}
+		if (isset($mapping['_routing'])) {
+			$additionalPath[] = 'routing=' . $this->data[$mapping['_routing']['path']];
+		}
+		if (!empty($additionalPath)) {
+			$path .= '?' . implode('&', $additionalPath);
 		}
 		$response = $this->request($method, $path, array(), json_encode($this->data));
 		$treatedContent = $response->getTreatedContent();

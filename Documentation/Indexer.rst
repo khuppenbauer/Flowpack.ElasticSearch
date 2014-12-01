@@ -87,6 +87,25 @@ ElasticSearch allows the mapping configuration done via annotations. See the exa
 
 Note that for mapping creation, the type will automatically be determined from the PHP type the property is of.
 
+
+Default fields which can't be set through property annotations can be set in your ``Settings.yaml``:
+
+*Example: Enable the timestamp* ::
+
+	Flowpack:
+	  ElasticSearch:
+		mapping:
+		  twitter:
+			tweet:
+			  _timestamp:
+				enabled: true
+				store: true
+
+Note that some fields have to be set when the index is created.
+After creating the index you can set the mapping with the CLI command::
+
+	flow mapping:converge
+
 Value transformations
 =====================
 

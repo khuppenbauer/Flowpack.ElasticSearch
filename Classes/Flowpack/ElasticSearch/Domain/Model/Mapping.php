@@ -12,6 +12,7 @@ namespace Flowpack\ElasticSearch\Domain\Model;
  *                                                                        */
 
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Utility\Arrays;
 
 /**
  * Reflects a Mapping of Elasticsearch
@@ -33,6 +34,19 @@ class Mapping {
 	 * @var array
 	 */
 	protected $dynamicTemplates = array();
+
+	/**
+	 * @var array
+	 */
+	protected $settings;
+
+	/**
+	 * @param array $settings
+	 * @return void
+	 */
+	public function injectSettings(array $settings) {
+		$this->settings = $settings;
+	}
 
 	/**
 	 * @param \Flowpack\ElasticSearch\Domain\Model\AbstractType $type
@@ -82,10 +96,13 @@ class Mapping {
 	 * @return array
 	 */
 	public function asArray() {
-		return array($this->type->getName() => array(
-			'dynamic_templates' => $this->getDynamicTemplates(),
-			'properties' => $this->getProperties()
-		));
+		$typeMapping = Arrays::getValueByPath($this->settings, 'mapping.' . $this->type->getIndex()->getName() . '.' . $this->type->getName());
+		if (!empty($typeMapping)) {
+			$mapping[$this->type->getName()] = $typeMapping;
+		}
+		$mapping[$this->type->getName()]['dynamic_templates'] = $this->getDynamicTemplates();
+		$mapping[$this->type->getName()]['properties'] = $this->getProperties();
+		return $mapping;
 	}
 
 	/**
