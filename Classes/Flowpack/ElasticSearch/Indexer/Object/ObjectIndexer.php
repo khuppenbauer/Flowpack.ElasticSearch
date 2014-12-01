@@ -16,6 +16,7 @@ use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document;
 use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Utility\Arrays;
 
 /**
  * This serves functionality for indexing objects
@@ -109,12 +110,19 @@ class ObjectIndexer {
 		$data = array();
 		foreach ($this->indexInformer->getClassProperties($className) AS $propertyName) {
 			$value = \TYPO3\Flow\Reflection\ObjectAccess::getProperty($object, $propertyName);
+			if (empty($value)) {
+				continue;
+			}
 			if (($transformAnnotation = $this->reflectionService->getPropertyAnnotation($className, $propertyName, 'Flowpack\ElasticSearch\Annotations\Transform')) !== NULL) {
 				$value = $this->transformerFactory->create($transformAnnotation->type)->transformByAnnotation($value, $transformAnnotation);
 			}
-			$data[$propertyName] = $value;
-		}
 
+			if (is_array($value) && self::is_assoc($value)) {
+				$data = Arrays::arrayMergeRecursiveOverrule($data, $value);
+			} else {
+				$data[$propertyName] = $value;
+			}
+		}
 		return $data;
 	}
 
@@ -198,6 +206,16 @@ class ObjectIndexer {
 	 */
 	public function getClient() {
 		return $this->client;
+	}
+
+	/**
+	 * Determines whether the given array is an associative array or not
+	 *
+	 * @param array $array
+	 * @return boolean
+	 */
+	static function is_assoc($array) {
+		return (bool)count(array_filter(array_keys($array), 'is_string'));
 	}
 }
 
