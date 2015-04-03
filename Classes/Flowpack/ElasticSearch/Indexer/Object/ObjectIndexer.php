@@ -16,6 +16,7 @@ use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document;
 use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Reflection\ObjectAccess;
 use TYPO3\Flow\Utility\Arrays;
 
 /**
@@ -109,6 +110,9 @@ class ObjectIndexer {
 		$className = $this->reflectionService->getClassNameByObject($object);
 		$data = array();
 		foreach ($this->indexInformer->getClassProperties($className) AS $propertyName) {
+			if (!ObjectAccess::isPropertyGettable($object, $propertyName)) {
+				continue;
+			}
 			$value = \TYPO3\Flow\Reflection\ObjectAccess::getProperty($object, $propertyName);
 			if (empty($value)) {
 				continue;
