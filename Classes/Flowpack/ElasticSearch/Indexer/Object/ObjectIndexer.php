@@ -108,8 +108,22 @@ class ObjectIndexer {
 	 */
 	protected function getIndexablePropertiesAndValuesFromObject($object) {
 		$className = $this->reflectionService->getClassNameByObject($object);
+		$data = $this->getPropertiesAndValuesFromObject($object, $this->indexInformer->getClassProperties($className));
+		return $data;
+	}
+
+	/**
+	 * Returns a multidimensional array with the indexable, probably transformed values of an object
+	 *
+	 * @param $object
+	 * @param array $properties
+	 *
+	 * @return array
+	 */
+	protected function getPropertiesAndValuesFromObject($object, $properties) {
+		$className = $this->reflectionService->getClassNameByObject($object);
 		$data = array();
-		foreach ($this->indexInformer->getClassProperties($className) AS $propertyName) {
+		foreach ($properties AS $propertyName) {
 			if (!ObjectAccess::isPropertyGettable($object, $propertyName)) {
 				continue;
 			}
@@ -128,6 +142,35 @@ class ObjectIndexer {
 			}
 		}
 		return $data;
+	}
+
+	/**
+	 * Updates an Elasticsearch Document through the update API
+	 * Use this method, if you want to do a partial update of a document
+	 *
+	 * @param object $object
+	 * @param array $properties properties to update
+	 * @param string $signalInformation Signal information, if called from a signal
+	 * @param \Flowpack\ElasticSearch\Domain\Model\Client $client
+	 *
+	 * @return void
+	 */
+	public function updateObject($object, $properties, $signalInformation = NULL, Client $client = NULL) {
+		$objectHash = spl_object_hash($object);
+		if (isset($this->handledObjects[$objectHash])) {
+			return;
+		}
+		$this->handledObjects[$objectHash] = $object;
+
+		$type = $this->getIndexTypeForObject($object, $client);
+		if ($type === NULL) {
+			return NULL;
+		}
+		$data['doc'] = $this->getPropertiesAndValuesFromObject($object, $properties);
+
+		$id = $this->persistenceManager->getIdentifierByObject($object);
+		$document = new Document($type, $data, $id);
+		$document->update();
 	}
 
 	/**

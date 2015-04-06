@@ -134,6 +134,24 @@ class Document {
 	}
 
 	/**
+	 * Performs a partial update of a document
+	 *
+	 * @throws \Flowpack\ElasticSearch\Exception
+	 * @return void
+	 * @see http://www.elastic.co/guide/en/elasticsearch/guide/master/partial-updates.html
+	 */
+	public function update() {
+		$method = 'POST';
+		$path = '/' . $this->id . '/_update';
+		$response = $this->request($method, $path, array(), json_encode($this->data));
+		$treatedContent = $response->getTreatedContent();
+
+		$this->id = $treatedContent['_id'];
+		$this->version = $treatedContent['_version'];
+		$this->dirty = FALSE;
+	}
+
+	/**
 	 * @param boolean $dirty
 	 */
 	protected function setDirty($dirty = TRUE) {
