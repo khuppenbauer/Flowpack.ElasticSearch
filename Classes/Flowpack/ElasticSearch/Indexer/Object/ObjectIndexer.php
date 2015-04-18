@@ -117,10 +117,11 @@ class ObjectIndexer {
 	 *
 	 * @param $object
 	 * @param array $properties
+	 * @param boolean $includeEmptyValues
 	 *
 	 * @return array
 	 */
-	protected function getPropertiesAndValuesFromObject($object, $properties) {
+	protected function getPropertiesAndValuesFromObject($object, $properties, $includeEmptyValues = FALSE) {
 		$className = $this->reflectionService->getClassNameByObject($object);
 		$data = array();
 		foreach ($properties AS $propertyName) {
@@ -128,7 +129,7 @@ class ObjectIndexer {
 				continue;
 			}
 			$value = \TYPO3\Flow\Reflection\ObjectAccess::getProperty($object, $propertyName);
-			if (empty($value)) {
+			if (empty($value) && $includeEmptyValues === FALSE) {
 				continue;
 			}
 			if (($transformAnnotation = $this->reflectionService->getPropertyAnnotation($className, $propertyName, 'Flowpack\ElasticSearch\Annotations\Transform')) !== NULL) {
@@ -166,7 +167,7 @@ class ObjectIndexer {
 		if ($type === NULL) {
 			return NULL;
 		}
-		$data['doc'] = $this->getPropertiesAndValuesFromObject($object, $properties);
+		$data['doc'] = $this->getPropertiesAndValuesFromObject($object, $properties, TRUE);
 
 		$id = $this->persistenceManager->getIdentifierByObject($object);
 		$document = new Document($type, $data, $id);
